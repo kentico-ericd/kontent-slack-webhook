@@ -34,7 +34,7 @@ public static async Task<IActionResult> Run(HttpRequest req, ILogger log)
 
     // Get body
     string content;
-    using (Stream receiveStr  eam = req.Body)
+    using (Stream receiveStream = req.Body)
     {
         using (StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8))
         {
