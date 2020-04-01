@@ -36,51 +36,53 @@ public static async Task<IActionResult> Run(HttpRequest req, ILogger log)
     string content;
     using (Stream receiveStr  eam = req.Body)
     {
-      using (StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8))
-      {
-        content = readStream.ReadToEnd();
-      }
+        using (StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8))
+        {
+            content = readStream.ReadToEnd();
+        }
     }
 
     // Generate a hash using the content and the webhook secret
     var hash = GenerateHash(content, webhookSecret);
 
     // Verify the notification is valid
-    if(sig != hash)
+    if (sig != hash)
     {
-      return new HttpResponseMessage(HttpStatusCode.Unauthorized) {
-        ReasonPhrase = "Signature validation failed"
-      } as IActionResult;
+        return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            ReasonPhrase = "Signature validation failed"
+        } as IActionResult;
     }
-    
+
     var settings = new JsonSerializerSettings
-      {
+    {
         NullValueHandling = NullValueHandling.Ignore,
         MissingMemberHandling = MissingMemberHandling.Ignore
-      };
+    };
     dynamic data = JsonConvert.DeserializeObject(content, settings);
 
     if (data == null)
     {
-      return new HttpResponseMessage(HttpStatusCode.BadRequest) {
-        ReasonPhrase = "Please pass data properties in the input object"
-      } as IActionResult;
+        return new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            ReasonPhrase = "Please pass data properties in the input object"
+        } as IActionResult;
     }
 
     // Make sure it's a valid operation
-    if(data.message.operation.ToString().ToLower() == "publish")
+    if (data.message.operation.ToString().ToLower() == "publish")
     {
-      List<string> lstCodeNames = new List<string>();
+        List<string> lstCodeNames = new List<string>();
 
-      foreach(var item in data.data.items)
-      {
-        lstCodeNames.Add(item.codename.ToString());
-      }
-      if(lstCodeNames.Count > 0)
-      {
-        await PostToSlack(lstCodeNames, log);
-      }
-      return new HttpResponseMessage(HttpStatusCode.OK) as IActionResult;
+        foreach (var item in data.data.items)
+        {
+            lstCodeNames.Add(item.codename.ToString());
+        }
+        if (lstCodeNames.Count > 0)
+        {
+            await PostToSlack(lstCodeNames, log);
+        }
+        return new HttpResponseMessage(HttpStatusCode.OK) as IActionResult;
     }
 
     return new HttpResponseMessage(HttpStatusCode.NoContent) as IActionResult;
@@ -98,13 +100,13 @@ private static async Task PostToSlack(List<string> list, ILogger log)
             .Build())
             .Build();
 
-        foreach(string codename in list)
+        foreach (string codename in list)
         {
             DeliveryItemResponse response = await deliveryclient.GetItemAsync(codename);
-            if(response != null)
+            if (response != null)
             {
-                var item = response.Item;    
- 
+                var item = response.Item;
+
                 var msg = slackclient.PostMessage(
                     username: "KontentBot",
                     text: "Content update: '" + item.System.Name
